@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustFixer - Misrepresentation Checker</title>
+  <!-- Add jsPDF library for real PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+    }
+
+    /* Header Bar */
+    .header {
+      background: #2c3e50;
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #3498db;
+    }
+
+    .nav {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .nav a {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+
+    .nav a:hover {
+      background: #34495e;
+    }
+
+    .nav a.active {
+      background: #3498db;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Fair Use Notice */
+    .fair-use-notice {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    /* Main Panel */
+    .main-panel {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .panel-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 1.5rem;
+      color: #2c3e50;
+    }
+
+    /* Scan Section */
+    .scan-section {
+      margin-bottom: 2rem;
+    }
+
+    .domain-input {
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      padding: 1rem;
+      border-radius: 8px;
+      width: 100%;
+      font-size: 1rem;
+      color: #6c757d;
+      margin-bottom: 1rem;
+    }
+
+    .domain-input:disabled {
+      cursor: not-allowed;
+    }
+
+    .scan-button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      width: 100%;
+    }
+
+    .scan-button:hover:not(:disabled) {
+      background: #2980b9;
+    }
+
+    .scan-button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    /* Scan Result Panel */
+    .result-panel {
+      display: none;
+      margin-top: 2rem;
+    }
+
+    .result-title {
+      font-size: 1.25rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      color: #2c3e50;
+    }
+
+    .result-content {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 1.5rem;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: 1rem;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .export-button {
+      background: #27ae60;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .export-button:hover {
+      background: #229954;
+    }
+
+    /* Features Summary */
+    .features-summary {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .feature-card {
+      background: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border-left: 4px solid #3498db;
+    }
+
+    .feature-title {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: #2c3e50;
+    }
+
+    /* Scan History */
+    .history-section {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .history-table th,
+    .history-table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .history-table th {
+      background: #f8f9fa;
+      font-weight: bold;
+    }
+
+    .download-link {
+      color: #3498db;
+      text-decoration: none;
+    }
+
+    .download-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Hands-On Fix Service */
+    .fix-service {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .fix-service h3 {
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+
+    .fix-service p {
+      margin-bottom: 1.5rem;
+      opacity: 0.9;
+    }
+
+    .fix-price {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+
+    .fix-button {
+      background: #f39c12;
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .fix-button:hover {
+      background: #e67e22;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+      background-color: white;
+      margin: 15% auto;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn-cancel {
+      background: #95a5a6;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-submit {
+      background: #27ae60;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* Footer */
+    .footer {
+      background: #2c3e50;
+      color: white;
+      text-align: center;
+      padding: 2rem;
+      margin-top: 3rem;
+    }
+
+    .footer a {
+      color: #3498db;
+      text-decoration: none;
+      margin: 0 1rem;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Loading Animation */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav {
+      display: none;
+      }
+      
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .history-table {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="header">
+    <div class="logo">🧠 TrustFixer</div>
+    <nav class="nav">
+      <a href="#" class="active">Dashboard</a>
+      <a href="#" onclick="showHistory()">Scan History</a>
+      <a href="#" onclick="showSettings()">Account Settings</a>
+      <a href="#" onclick="logout()">Log out</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <!-- Fair Use Notice -->
+    <div class="fair-use-notice">
+      ⚠️ You're allowed 100 scans/month. Contact support if you need more.
+    </div>
+
+    <!-- Main Panel: AI-Powered Misrepresentation Scanner -->
+    <div class="main-panel">
+      <h2 class="panel-title">🖥️ AI-Powered Misrepresentation Scanner</h2>
+      
+      <!-- Scan Section -->
+      <div class="scan-section">
+        <input 
+          type="text" 
+          class="domain-input" 
+          id="domainInput" 
+          value="store-name.myshopify.com" 
+          disabled 
+          placeholder="Your assigned domain"
+        />
+        <button class="scan-button" id="scanButton" onclick="startScan()">
+          🔍 Scan Now
+        </button>
+      </div>
+
+      <!-- Scan Result Panel -->
+      <div class="result-panel" id="resultPanel">
+        <h3 class="result-title">📋 Scan Results Summary (Text Only)</h3>
+        <div class="result-content" id="resultContent"></div>
+        <button class="export-button" onclick="exportToPDF()">
+          📄 Export to PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Scan History -->
+    <div class="history-section" id="historySection" style="display: none;">
+      <h3 class="panel-title">🔧 Scan History</h3>
+      <p>See your last 10 scans</p>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Scan Result</th>
+            <th>PDF Download</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>July 28</td>
+            <td>⚠️ Issues Found</td>
+            <td><a href="#" class="download-link">[Download]</a></td>
+          </tr>
+          <tr>
+            <td>July 25</td>
+            <td>✅ No Issues</td>
+            <td><a href="#" class="download-link">[Download]</a></td>
+          </tr>
+          <tr>
+            <td>July 22</td>
+            <td>⚠️ Issues Found</td>
+            <td><a href="#" class="download-link">[Download]</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Hands-On Fix Service -->
+    <div class="fix-service">
+      <h3>🛠️ Want a Pro to Fix It For You?</h3>
+      <p>Our expert will manually fix your Shopify site for policy compliance and faster approval — includes review, updates, and custom improvements.</p>
+      <div class="fix-price">$799 one-time</div>
+      <button class="fix-button" onclick="showFixService()">
+        🔒 Add Hands-On Fix Service
+      </button>
+    </div>
+  </div>
+
+  <!-- Fix Service Modal -->
+  <div class="modal" id="fixModal">
+    <div class="modal-content">
+      <h3 class="modal-title">Hands-On Fix Service</h3>
+      <form id="fixForm">
+        <div class="form-group">
+          <label for="name">Name:</label>
+          <input type="text" id="name" required>
+        </div>
+        <div class="form-group">
+          <label for="email">Email:</label>
+          <input type="email" id="email" required>
+        </div>
+        <div class="form-group">
+          <label for="assignedDomain">Assigned Domain:</label>
+          <input type="text" id="assignedDomain" value="store-name.myshopify.com" disabled>
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn-submit">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <a href="#">Terms of Service</a>
+    <a href="#">Privacy Policy</a>
+    <a href="#">Contact</a>
+  </footer>
+
+  <script>
+    let scanCount = 0;
+    const maxScans = 100;
+
+    function startScan() {
+      const scanButton = document.getElementById('scanButton');
+      const resultPanel = document.getElementById('resultPanel');
+      const resultContent = document.getElementById('resultContent');
+      
+      if (scanCount >= maxScans) {
+        alert('Scan limit reached. Upgrade not available in this tier.');
+        return;
+      }
+
+      // Update button state
+      scanButton.disabled = true;
+      scanButton.innerHTML = '<span class="loading"></span>🔄 Scanning in progress… Please wait (~30 seconds) as we analyze your site.';
+
+      // Simulate scan delay
+      setTimeout(() => {
+        scanCount++;
+        
+        // Generate mock scan result
+        const result = generateMockResult();
+        
+        // Display result
+        resultContent.textContent = result;
+        resultPanel.style.display = 'block';
+        
+        // Reset button
+        scanButton.disabled = false;
+        scanButton.textContent = '🔍 Scan Now';
+        
+        // Update scan count display
+        updateScanCount();
+      }, 30000); // 30 seconds
+    }
+
+    function generateMockResult() {
+      const results = [
+        `🧠 TrustFixer AI Scan Report
+Generated: ${new Date().toLocaleString()}
+Domain: store-name.myshopify.com
+
+📋 EXECUTIVE SUMMARY
+Your Shopify store has been analyzed for policy compliance and trust indicators. Overall score: 7.2/10
+
+✅ POSITIVE FINDINGS
+• SSL certificate is properly configured
+• Domain has legitimate registration history
+• Basic contact information is present
+• Privacy policy page exists
+
+⚠️ ISSUES REQUIRING ATTENTION
+• Missing refund policy page
+• No terms of service found
+• Product descriptions contain unrealistic claims
+• Limited customer support information
+
+🚨 CRITICAL ISSUES
+• "100% guaranteed results" claims detected
+• "Limited time offer" without clear terms
+• Missing business address information
+
+🛠️ RECOMMENDED ACTIONS
+1. Create a comprehensive refund policy page
+2. Add terms of service and conditions
+3. Review and modify product claims for accuracy
+4. Add complete business contact information
+5. Implement clear customer support channels
+
+📊 DETAILED ANALYSIS
+Content Analysis: 1,247 words scanned
+Policy Compliance: 60% complete
+Trust Indicators: Moderate
+Security Score: 85/100
+
+This report is generated by TrustFixer AI and should be used as a guideline for improving your store's compliance and trustworthiness.`,
+
+        `🧠 TrustFixer AI Scan Report
+Generated: ${new Date().toLocaleString()}
+Domain: store-name.myshopify.com
+
+📋 EXECUTIVE SUMMARY
+Excellent! Your Shopify store shows strong compliance and trust indicators. Overall score: 9.1/10
+
+✅ POSITIVE FINDINGS
+• All required policies are present and comprehensive
+• SSL certificate properly configured
+• Clear contact information provided
+• Professional product descriptions
+• Good customer support structure
+• No misleading claims detected
+
+🎉 COMPLIANCE STATUS
+• Privacy Policy: ✅ Complete
+• Refund Policy: ✅ Complete  
+• Terms of Service: ✅ Complete
+• Contact Information: ✅ Complete
+• Security Measures: ✅ Excellent
+
+📊 DETAILED ANALYSIS
+Content Analysis: 2,156 words scanned
+Policy Compliance: 95% complete
+Trust Indicators: High
+Security Score: 92/100
+
+Your store demonstrates excellent compliance with e-commerce best practices and should have no issues with platform policies or customer trust.`,
+
+        `🧠 TrustFixer AI Scan Report
+Generated: ${new Date().toLocaleString()}
+Domain: store-name.myshopify.com
+
+📋 EXECUTIVE SUMMARY
+Your Shopify store needs significant improvements for policy compliance. Overall score: 4.8/10
+
+❌ CRITICAL ISSUES FOUND
+• No privacy policy detected
+• Missing refund/return policy
+• No terms of service found
+• Incomplete contact information
+• Multiple unrealistic product claims
+• Suspicious marketing language detected
+
+🚨 POLICY VIOLATIONS
+• "Miracle cure" claims in product descriptions
+• "Get rich quick" promises detected
+• "Limited time only" without clear terms
+• Missing business registration information
+
+⚠️ TRUST INDICATORS
+• Low domain age (recently registered)
+• Limited online presence
+• No customer reviews or testimonials
+• Poor content quality
+
+🛠️ IMMEDIATE ACTIONS REQUIRED
+1. Create comprehensive privacy policy
+2. Develop clear refund and return policy
+3. Add terms of service and conditions
+4. Remove unrealistic product claims
+5. Add complete business information
+6. Improve overall content quality
+
+📊 DETAILED ANALYSIS
+Content Analysis: 856 words scanned
+Policy Compliance: 25% complete
+Trust Indicators: Low
+Security Score: 65/100
+
+This store requires immediate attention to meet basic e-commerce compliance standards.`
+      ];
+
+      return results[Math.floor(Math.random() * results.length)];
+    }
+
+    function exportToPDF() {
+      const resultContent = document.getElementById('resultContent').textContent;
+      
+      if (!resultContent) {
+        alert('No scan results to export. Please run a scan first.');
+        return;
+      }
+
+      // Create new PDF document
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      // Set document properties
+      doc.setProperties({
+        title: 'TrustFixer AI Scan Report',
+        subject: 'Misrepresentation Analysis Report',
+        author: 'TrustFixer AI',
+        creator: 'TrustFixer Dashboard'
+      });
+
+      // Add header
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('🧠 TrustFixer AI Scan Report', 20, 20);
+      
+      // Add generation date
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 30);
+      doc.text(`Domain: store-name.myshopify.com`, 20, 37);
+
+      // Split content into lines that fit the page
+      const maxWidth = 170; // Page width minus margins
+      const lineHeight = 7;
+      let yPosition = 50;
+      
+      // Split the content by lines and process each line
+      const lines = resultContent.split('\n');
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // Check if we need a new page
+        if (yPosition > 270) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        // Handle different line types
+        if (line.includes('📋 EXECUTIVE SUMMARY') || 
+            line.includes('✅ POSITIVE FINDINGS') || 
+            line.includes('⚠️ ISSUES REQUIRING ATTENTION') ||
+            line.includes('🚨 CRITICAL ISSUES') ||
+            line.includes('🛠️ RECOMMENDED ACTIONS') ||
+            line.includes('📊 DETAILED ANALYSIS') ||
+            line.includes('🎉 COMPLIANCE STATUS') ||
+            line.includes('❌ CRITICAL ISSUES FOUND') ||
+            line.includes('🚨 POLICY VIOLATIONS') ||
+            line.includes('⚠️ TRUST INDICATORS') ||
+            line.includes('🛠️ IMMEDIATE ACTIONS REQUIRED')) {
+          // Section headers
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text(line, 20, yPosition);
+          yPosition += lineHeight + 2;
+        } else if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+          // Bullet points
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.text(line, 25, yPosition);
+          yPosition += lineHeight;
+        } else if (line.trim().match(/^\d+\./)) {
+          // Numbered lists
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.text(line, 20, yPosition);
+          yPosition += lineHeight;
+        } else if (line.trim() === '') {
+          // Empty lines
+          yPosition += lineHeight / 2;
+        } else {
+          // Regular text
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          
+          // Check if line needs to be wrapped
+          if (doc.getTextWidth(line) > maxWidth) {
+            const words = line.split(' ');
+            let currentLine = '';
+            
+            for (let j = 0; j < words.length; j++) {
+              const testLine = currentLine + words[j] + ' ';
+              if (doc.getTextWidth(testLine) > maxWidth && currentLine !== '') {
+                doc.text(currentLine, 20, yPosition);
+                yPosition += lineHeight;
+                currentLine = words[j] + ' ';
+              } else {
+                currentLine = testLine;
+              }
+            }
+            
+            if (currentLine.trim()) {
+              doc.text(currentLine, 20, yPosition);
+              yPosition += lineHeight;
+            }
+          } else {
+            doc.text(line, 20, yPosition);
+            yPosition += lineHeight;
+          }
+        }
+      }
+
+      // Add footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        doc.text(`Page ${i} of ${pageCount}`, 20, 285);
+        doc.text('Generated by TrustFixer AI - www.trustfixer.com', 20, 290);
+      }
+
+      // Save the PDF
+      const filename = `TrustFixer_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(filename);
+      
+      // Show success message
+      alert(`PDF report saved as: ${filename}`);
+    }
+
+    function showHistory() {
+      const historySection = document.getElementById('historySection');
+      historySection.style.display = historySection.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function showSettings() {
+      alert('Account Settings would open here');
+    }
+
+    function logout() {
+      if (confirm('Are you sure you want to log out?')) {
+        alert('Logged out successfully');
+      }
+    }
+
+    function showFixService() {
+      document.getElementById('fixModal').style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('fixModal').style.display = 'none';
+    }
+
+    function updateScanCount() {
+      const remaining = maxScans - scanCount;
+      if (remaining <= 0) {
+        document.getElementById('scanButton').disabled = true;
+        document.getElementById('scanButton').textContent = 'Scan limit reached. Upgrade not available in this tier.';
+      }
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('fixModal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    }
+
+    // Handle form submission
+    document.getElementById('fixForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      alert('Service request submitted! Our team will contact you within 24 hours.');
+      closeModal();
+    });
+
+    // Initialize scan count display
+    updateScanCount();
+  </script>
+</body>
+</html>
